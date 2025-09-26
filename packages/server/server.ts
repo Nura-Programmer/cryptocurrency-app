@@ -2,8 +2,10 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import express from 'express';
+import http from 'http';
 import type { Request, Response } from 'express';
 import redis from './lib/redis.ts';
+import { Server as SocketIOServer } from 'socket.io';
 
 dotenv.config();
 
@@ -50,6 +52,14 @@ app.get("/api/prices", async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+const server = http.createServer(app);
+const io = new SocketIOServer(server, { cors: { origin: "*" } });
+
+io.on("connection", (socket) => {
+    console.log("Client connected", socket.id);
+});
+
+// Start server
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
