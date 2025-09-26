@@ -1,6 +1,5 @@
 import Redis from "ioredis";
 import dotenv from "dotenv";
-import Stream from "stream";
 
 dotenv.config();
 
