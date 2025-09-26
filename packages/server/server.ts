@@ -5,6 +5,7 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
 import priceRouter from './routes/priceRouter';
+import { startPricePoller } from './services/priceService';
 
 dotenv.config();
 
@@ -34,4 +35,5 @@ io.on("connection", (socket) => {
 // Start server
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    startPricePoller(io, ["bitcoin", "ethereum"]);
 });
