@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import express from 'express';
 import type { Request, Response } from 'express';
+import redis from './lib/redis.ts';
 
 dotenv.config();
 
@@ -13,8 +14,12 @@ app.use(express.json());
 
 const prices: string[] = [];
 
-const PORT = process.env.PORT || 5000;
-const COINGECKO = process.env.COINGECKO_BASE || "https://api.coingecko.com/api/v3";
+const {
+    PORT = 5000,
+    COINGECKO = "https://api.coingecko.com/api/v3",
+    CACHE_TTL = 15
+} = process.env;
+
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello cryptocurrency server!');
@@ -25,19 +30,16 @@ app.get("/api/prices", async (req, res) => {
         const coinsQuery = (req.query.coins as string) || "bitcoin,ethereum";
         const coins = coinsQuery.split(",").map((c) => c.trim().toLowerCase());
 
-        const data: Record<string, any> = {};
+        const ids = coins.join(",");
+        const url = `${COINGECKO}/simple/price?ids=${encodeURIComponent(ids)}&vs_currencies=usd`;
+        const { data } = await axios.get(url, { timeout: 5000 });
+        const ts = Date.now();
 
-        for (const coin of coins) {
-            const priceExist = prices.includes(`price:${coin}:usd`);
+        for (const coin of Object.keys(data)) {
+            const price = data[coin].usd;
+            const key = `price:${coin}:usd`;
 
-            if (!priceExist) prices.push(`price:${coin}:usd`);
-
-            const ids = coins.join(",");
-
-            const url = `${COINGECKO}/simple/price?ids=${encodeURIComponent(ids)}&vs_currencies=usd`;
-            const res = await axios.get(url, { timeout: 5000 });
-
-            res.data && Object.assign(data, res.data); // e.g. { bitcoin: { usd: 26000 }, ethereum: { usd: 1700 } }
+            await redis.set(key, JSON.stringify({ price, ts }), "EX", +CACHE_TTL);
         }
 
         res.json({ data });
