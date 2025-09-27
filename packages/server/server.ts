@@ -5,6 +5,7 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
 import priceRouter from './routes/priceRouter';
+import alertRouter from "./routes/alertRouter";
 import { startPricePoller } from './services/priceService';
 
 dotenv.config();
@@ -19,6 +20,7 @@ const {
 } = process.env;
 
 app.use("/api/prices", priceRouter);
+app.use("/api/alerts", alertRouter);
 
 
 app.get('/', (req: Request, res: Response) => {
