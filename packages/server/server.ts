@@ -28,7 +28,11 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 const server = http.createServer(app);
-const io = new SocketIOServer(server, { cors: { origin: "*" } });
+
+const io = new SocketIOServer(server, {
+    cors: { origin: "*" },
+    path: "/socket.io"
+});
 
 io.on("connection", (socket) => {
     console.log("Client connected", socket.id);
