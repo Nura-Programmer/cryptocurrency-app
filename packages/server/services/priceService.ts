@@ -2,8 +2,11 @@ import axios from "axios";
 import redis from "../lib/redis";
 import { Server as SocketIOServer } from "socket.io";
 import dotenv from "dotenv";
+import { OPERATOR, PrismaClient } from "@prisma/client";
 
 dotenv.config();
+
+const prisma = new PrismaClient();
 
 const {
     COINGECKO = "https://api.coingecko.com/api/v3",
@@ -28,6 +31,7 @@ export function startPricePoller(io: SocketIOServer, coins: string[] = ["bitcoin
 
                 io.emit("price_update", { coin, price, ts });
 
+                await evaluateAlerts(coin, price, ts, io);
             }
         } catch (err: any) {
             console.error("Poller error:", err.message);
@@ -39,3 +43,37 @@ export function startPricePoller(io: SocketIOServer, coins: string[] = ["bitcoin
     const timer = setInterval(fetchAndBroadcast, +POLL_INTERVAL);
     return () => clearInterval(timer);
 }
+
+export async function evaluateAlerts(coin: string, price: number, ts: number, io: SocketIOServer) {
+    const alerts = await prisma.alert.findMany({
+        where: { coinId: coin, active: true },
+    });
+
+    for (const alert of alerts) {
+        let match = false;
+
+        if (alert.operator === OPERATOR.GREATER_THAN && price > alert.target) {
+            match = true;
+        }
+
+        if (alert.operator === OPERATOR.LESS_THAN && price < alert.target) {
+            match = true;
+        }
+
+        if (match) {
+            await prisma.alert.update({
+                where: { id: alert.id },
+                data: { active: false, updatedAt: new Date(ts) },
+            });
+
+            io.emit("alert", {
+                alertId: alert.id,
+                coin,
+                operator: alert.operator,
+                target: alert.target,
+                price,
+                ts,
+            });
+        }
+    }
+};
