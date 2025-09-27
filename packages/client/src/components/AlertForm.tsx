@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { Button } from "./ui/button";
 
 const AlertForm = () => {
   const [coinId, setCoinId] = useState("");
@@ -52,7 +53,9 @@ const AlertForm = () => {
             onChange={(e) => setTarget(parseFloat(e.target.value))}
           />
         </div>
-        <button type="submit">Set Alert</button>
+        <Button type="submit" className="btn btn-primary mt-2">
+          Set Alert
+        </Button>
       </form>
       {message && <p>{message}</p>}
     </div>
