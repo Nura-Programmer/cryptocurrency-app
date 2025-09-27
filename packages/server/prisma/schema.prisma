@@ -13,3 +13,21 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  coinId    String
+  currency  String   @default("usd") @db.VarChar(4)
+  operator  OPERATOR @default(GREATER_THAN)
+  target    Float
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([coinId, active])
+}
+
+enum OPERATOR {
+  GREATER_THAN
+  LESS_THAN
+}
