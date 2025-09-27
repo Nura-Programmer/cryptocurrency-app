@@ -24,4 +24,13 @@ router.post("/", async (req, res, next) => {
     }
 });
 
+router.get("/", async (_req, res, next) => {
+    try {
+        const alerts = await prisma.alert.findMany({ orderBy: { createdAt: "desc" } });
+        res.json({ data: alerts });
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;
